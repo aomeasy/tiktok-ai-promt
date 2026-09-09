@@ -185,9 +185,9 @@
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">prototype · v0.1</p>
+    <p class="eyebrow">prototype · v0.2</p>
     <h1>ตัวช่วยสร้างสคริปต์ + prompt สำหรับ Google Flow</h1>
-    <p>กรอกรายละเอียดสินค้าครั้งเดียว ระบบจะประกอบเป็น prompt ภาษาอังกฤษ 3 ฉาก (Hook, Reveal, Demo) พร้อมวางลง Google Flow ได้ทันที แก้ไขข้อความในกล่องได้ก่อนคัดลอก</p>
+    <p>กรอกรายละเอียดสินค้าครั้งเดียว ระบบจะประกอบเป็น prompt ภาษาอังกฤษ 3 ฉาก (Hook, Reveal, Demo) พร้อมวางลง Google Flow ได้ทันที ทุก prompt กำกับให้วิดีโอไม่มีข้อความ/ซับไตเติล/ตัวอักษรใด ๆ ติดในภาพ (จะไปใส่ซับไตเติลเองทีหลังใน CapCut) แก้ไขข้อความในกล่องได้ก่อนคัดลอก</p>
   </header>
 
   <div class="grid">
@@ -231,7 +231,7 @@
       <div class="scene hook">
         <div class="scene-head"><span class="scene-num">ฉาก 01 · 0-5 วิ</span></div>
         <p class="scene-title">Hook — เปิดฉากดึงความสนใจ</p>
-        <p class="scene-note">ใช้จุดขายหลักของสินค้าเป็นตัวดึงความสนใจใน 3 วินาทีแรก</p>
+        <p class="scene-note">ใช้จุดขายหลักของสินค้าเป็นแรงจูงใจฉาก (ไม่ใช่ข้อความในภาพ) เพื่อดึงความสนใจใน 3 วินาทีแรก</p>
         <textarea class="prompt-box" id="out-hook" readonly></textarea>
         <div class="scene-foot"><button class="copy-btn" onclick="copyBox('out-hook', this)">คัดลอก</button></div>
       </div>
@@ -261,6 +261,7 @@
 
   <footer>
     ก่อนวางลง Google Flow — เช็ค aspect ratio เป็น 9:16 ทุกครั้งก่อนกด generate (ค่ามักรีเซ็ตเป็น 16:9) และเลือกโหมดวิดีโอ/Veo ไม่ใช่ Imagen เพราะสองโหมดนี้แยกกัน สำหรับหมวดสัตว์เลี้ยง/ผู้สูงอายุ ต้องแนบรูปจริงเป็น reference image ทุกครั้งที่ generate ฉาก Demo เพื่อให้ผลลัพธ์สมจริงพอ ไม่ใช่แค่ copy prompt ไปวางเฉย ๆ<br><br>
+    ทุก prompt ในหน้านี้ปิดท้ายด้วยคำสั่งห้ามมีตัวอักษร/ซับไตเติล/โลโก้ในวิดีโอแล้ว (no on-screen text, no captions, no subtitles, no watermark, no logos) แต่โมเดลวิดีโอบางตัวยังหลุดใส่ตัวอักษรเบลอ ๆ มาได้เอง ให้เช็คคลิปที่ได้ทุกครั้งก่อนตัดต่อ ถ้ายังมีตัวอักษรติดมา ให้ generate ใหม่หรือครอปฉากนั้นออก<br><br>
     <strong style="color:var(--gold);">ก่อนโพสต์ทุกคลิป:</strong> เปิดตัวเลือก "AI-generated content" ในหน้าอัปโหลดของ TikTok เสมอ (กฎ TikTok Shop 2026 บังคับติดป้ายคลิปที่ใช้ AI สร้างจนดูเหมือนจริง) และเช็คว่าฉากที่ generate ไม่ได้ทำให้สินค้าดูเวอร์เกินจริงเทียบกับของจริง โดยเฉพาะถ้าขายสินค้าหมวดสุขภาพ/ความงาม/ทำความสะอาด ซึ่งมีกฎเข้มกว่าหมวดอื่น
   </footer>
 </div>
@@ -278,6 +279,9 @@ const products = {
   'เข่าพยุงสำหรับผู้สูงอายุ': { category:'elderly', color:'beige', material:'breathable neoprene', weight:'—', presenter:'—', benefit:'พยุงเข่า ลดอาการปวด ใส่สบายไม่รัดแน่น' },
   'ราวจับกันลื่นติดผนังห้องน้ำ': { category:'elderly', color:'white', material:'stainless steel with anti-slip coating', weight:'—', presenter:'—', benefit:'กันลื่นในห้องน้ำ ติดตั้งง่าย ไม่ต้องเจาะกำแพงเยอะ' }
 };
+
+// คำสั่งท้าย prompt กำกับไม่ให้มีตัวอักษร/ซับไตเติล/โลโก้ปรากฏในวิดีโอ
+const NO_TEXT = 'no on-screen text, no captions, no subtitles, no watermark, no logos, no letters or numbers visible anywhere in frame';
 
 function refreshProductSelect(selected){
   const sel = document.getElementById('product-select');
@@ -328,19 +332,20 @@ function generate(){
   const benefit = val('benefit');
   const category = currentCategory;
 
-  const hook = `Close-up shot of a ${color} ${material} ${productName} being set down firmly on a wooden table, camera push-in to highlight "${benefit}", dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format`;
+  // หมายเหตุ: จุดขายหลัก (benefit) ใช้เป็น "แรงจูงใจของฉาก" เท่านั้น ไม่ใส่เป็นข้อความ/คำพูดอ้างอิงในภาพ
+  const hook = `Close-up shot of a ${color} ${material} ${productName} being set down firmly on a wooden table, camera push-in, framing emphasizes the product's key feature: ${benefit}, dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format, ${NO_TEXT}`;
 
-  const reveal = `Extreme close-up product shot of a ${color} ${material} ${productName}${weight && weight !== '—' ? ` with a visible "${weight}" label` : ''}, textured surface, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format`;
+  const reveal = `Extreme close-up product shot of a ${color} ${material} ${productName}, textured surface${weight && weight !== '—' ? ', plain unlabeled surface (no printed text or numbers)' : ''}, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
 
   let demo, demoNote;
   if(category === 'pet'){
-    demo = `Using the attached reference photo of the pet, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at "${productName}" placed nearby, subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format`;
+    demo = `Using the attached reference photo of the pet, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at the ${productName} placed nearby, subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format, ${NO_TEXT}`;
     demoNote = 'แนบรูปสัตว์เลี้ยงจริงเป็น reference image ก่อน generate เพื่อให้หน้าตา/ลายขนตรงกับตัวจริง และจำกัด motion ให้สั้น (หันหัว/กระดิกหาง) หลีกเลี่ยง action เต็มตัวอย่างการวิ่งที่ AI ยังทำไม่สมจริง';
   } else if(category === 'elderly'){
-    demo = `Using the attached reference photo of the person, animate a short close-up clip: hands gripping and adjusting "${productName}", slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format`;
+    demo = `Using the attached reference photo of the person, animate a short close-up clip: hands gripping and adjusting the ${productName}, slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format, ${NO_TEXT}`;
     demoNote = 'แนบรูปคนจริงเป็น reference image ก่อน generate แล้วโฟกัสระยะใกล้ที่มือ/สีหน้าแทนท่าเดินเต็มตัว เพราะ AI ยังทำท่าเดิน/น้ำหนักตัวคนสูงอายุแบบเต็มตัวไม่สมจริงพอ';
   } else {
-    demo = `A ${presenter} demonstrating the ${color} ${productName} in everyday use, natural hand movements, clearly showing "${benefit}", bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format`;
+    demo = `A ${presenter} demonstrating the ${color} ${productName} in everyday use, natural hand movements, motion clearly conveys the product benefit: ${benefit}, bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format, ${NO_TEXT}`;
     demoNote = 'โชว์การใช้งานจริงเพื่อสร้างความน่าเชื่อถือและปิดการขาย';
   }
 
