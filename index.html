@@ -19,6 +19,7 @@
     --plum-dim:#4B3C6B;
     --gold:#E8B33D;
     --gold-dim:#5A4A24;
+    --danger:#D9705A;
   }
   *{box-sizing:border-box;}
   body{
@@ -67,6 +68,11 @@
     color:var(--ink-dim);
     margin-bottom:0.35rem;
   }
+  .field .hint{
+    font-size:11px;
+    color:var(--plum);
+    margin-top:0.25rem;
+  }
   .field input, .field select{
     width:100%;
     background:var(--panel-2);
@@ -80,6 +86,18 @@
   .field input:focus, .field select:focus{
     outline:none;
     border-color:var(--plum);
+  }
+  .checkbox-field{
+    display:flex;
+    align-items:flex-start;
+    gap:0.5rem;
+    margin-bottom:1.1rem;
+  }
+  .checkbox-field input{width:auto;margin-top:0.2rem;}
+  .checkbox-field label{
+    font-size:12px;
+    color:var(--ink-dim);
+    line-height:1.5;
   }
   .generate-btn{
     width:100%;
@@ -95,6 +113,18 @@
     margin-top:0.5rem;
   }
   .generate-btn:active{transform:scale(0.98);}
+
+  .warning-text{
+    display:none;
+    background:rgba(217,112,90,0.12);
+    border:1px solid var(--danger);
+    color:var(--danger);
+    font-size:12.5px;
+    line-height:1.5;
+    padding:0.6rem 0.8rem;
+    border-radius:6px;
+    margin-top:0.8rem;
+  }
 
   .scenes{display:flex;flex-direction:column;gap:1.25rem;}
   .scene{
@@ -144,9 +174,19 @@
   }
   .scene-foot{
     display:flex;
-    justify-content:flex-end;
+    align-items:center;
+    justify-content:space-between;
     margin-top:0.5rem;
+    gap:0.6rem;
   }
+  .ref-check{
+    display:none;
+    align-items:center;
+    gap:0.4rem;
+    font-size:12px;
+    color:var(--gold);
+  }
+  .ref-check input{margin:0;}
   .copy-btn{
     background:transparent;
     border:1px solid var(--line);
@@ -159,6 +199,13 @@
   }
   .copy-btn:hover{border-color:var(--accent, var(--plum)); color:var(--ink);}
   .copy-btn.copied{border-color:var(--gold); color:var(--gold);}
+  .copy-btn:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+    border-color:var(--line);
+    color:var(--ink-dim);
+  }
+  .copy-btn:disabled:hover{border-color:var(--line); color:var(--ink-dim);}
 
   .caption-out{
     margin-top:1.5rem;
@@ -185,9 +232,9 @@
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">prototype · v0.2</p>
+    <p class="eyebrow">prototype · v0.3</p>
     <h1>ตัวช่วยสร้างสคริปต์ + prompt สำหรับ Google Flow</h1>
-    <p>กรอกรายละเอียดสินค้าครั้งเดียว ระบบจะประกอบเป็น prompt ภาษาอังกฤษ 3 ฉาก (Hook, Reveal, Demo) พร้อมวางลง Google Flow ได้ทันที ทุก prompt กำกับให้วิดีโอไม่มีข้อความ/ซับไตเติล/ตัวอักษรใด ๆ ติดในภาพ (จะไปใส่ซับไตเติลเองทีหลังใน CapCut) แก้ไขข้อความในกล่องได้ก่อนคัดลอก</p>
+    <p>กรอกรายละเอียดสินค้าครั้งเดียว ระบบจะประกอบเป็น prompt ภาษาอังกฤษ 3 ฉาก (Hook, Reveal, Demo) พร้อมวางลง Google Flow ได้ทันที ทุก prompt กำกับให้วิดีโอไม่มีข้อความ/ซับไตเติล/ตัวอักษรใด ๆ ติดในภาพ (จะไปใส่ซับไตเติลเองทีหลังใน CapCut) หมายเหตุ: ช่องที่ระบุ "ส่งให้ AI" ต้องกรอกเป็นภาษาอังกฤษ เพราะโมเดลวิดีโอเข้าใจ prompt ภาษาอังกฤษเท่านั้น ส่วนช่องภาษาไทยใช้แสดงผลในหน้านี้และเป็นซับไตเติลเท่านั้น ไม่ถูกส่งเข้า prompt</p>
   </header>
 
   <div class="grid">
@@ -198,33 +245,68 @@
           <option value="">— เลือกสินค้า —</option>
         </select>
       </div>
+
       <div class="field">
-        <label for="product-name">ชื่อสินค้า</label>
+        <label for="category-select">หมวดหมู่สินค้า</label>
+        <select id="category-select" onchange="updateDemoAvailability()">
+          <option value="general">ทั่วไป</option>
+          <option value="pet">สัตว์เลี้ยง</option>
+          <option value="elderly">ผู้สูงอายุ</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="product-name">ชื่อสินค้า (ภาษาไทย — ใช้แสดงผลในหน้านี้)</label>
         <input id="product-name" value="พัดลมมือถือพกพา">
       </div>
+
       <div class="field">
-        <label for="color">สีสินค้า</label>
+        <label for="product-desc-en">คำอธิบายสินค้า (ภาษาอังกฤษ — ส่งให้ AI)</label>
+        <input id="product-desc-en" value="portable handheld mini fan">
+        <p class="hint">เช่น "portable handheld mini fan" — คำนี้จะถูกใส่ใน prompt จริง ห้ามเว้นว่าง</p>
+      </div>
+
+      <div class="field">
+        <label for="color">สีสินค้า (ภาษาอังกฤษ)</label>
         <input id="color" value="white">
       </div>
+
       <div class="field">
-        <label for="material">ลักษณะพื้นผิว/วัสดุ</label>
+        <label for="material">ลักษณะพื้นผิว/วัสดุ (ภาษาอังกฤษ)</label>
         <input id="material" value="matte ABS plastic">
       </div>
-      <div class="field">
-        <label for="weight">น้ำหนัก (label บนสินค้า)</label>
-        <input id="weight" value="300G">
+
+      <div class="checkbox-field">
+        <input type="checkbox" id="has-label">
+        <label for="has-label">มีตัวอักษร/โลโก้/ป้ายพิมพ์อยู่บนตัวสินค้าจริง (ใช้กันไม่ให้ AI เผลอ generate ตัวอักษรซ้ำ)</label>
       </div>
+
       <div class="field">
-        <label for="presenter">คำอธิบายผู้พรีเซนต์</label>
+        <label for="presenter">คำอธิบายผู้พรีเซนต์ (ภาษาอังกฤษ — ใช้เฉพาะหมวดทั่วไป)</label>
         <input id="presenter" value="young Thai woman in casual outfit">
       </div>
+
       <div class="field">
-        <label for="benefit">จุดขายหลัก (ใช้เป็นซับไตเติลในคลิป)</label>
+        <label for="benefit">จุดขายหลัก (ภาษาไทย — ใช้เป็นซับไตเติลในคลิปเท่านั้น)</label>
         <input id="benefit" value="พกพาง่าย ลมแรง ชาร์จไวไม่ร้อนเครื่อง">
       </div>
+
+      <div class="field">
+        <label for="benefit-en">จุดขายหลัก (ภาษาอังกฤษ — ส่งให้ AI)</label>
+        <input id="benefit-en" value="easy to carry, strong airflow, fast-charging without overheating">
+        <p class="hint">คำนี้จะถูกใส่ใน prompt จริง ห้ามเว้นว่าง</p>
+      </div>
+
+      <div class="checkbox-field">
+        <input type="checkbox" id="ref-attached" onchange="updateDemoAvailability()">
+        <label for="ref-attached">แนบรูปสัตว์เลี้ยง/คนจริงเป็น reference image ใน Google Flow แล้ว (จำเป็นเฉพาะหมวดสัตว์เลี้ยง/ผู้สูงอายุ ก่อนคัดลอก prompt ฉาก Demo)</label>
+      </div>
+
       <button class="generate-btn" onclick="generate()">สร้าง prompt ทั้ง 3 ฉาก</button>
       <button class="generate-btn" style="background:transparent;border:1px solid var(--line);color:var(--ink);margin-top:0.6rem;" onclick="saveProduct()">บันทึกเป็นสินค้าในรายการ</button>
       <a href="https://labs.google/fx/tools/flow" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:0.6rem;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;padding:0.7rem;border-radius:6px;text-decoration:none;">เปิด Google Flow ↗</a>
+
+      <p class="warning-text" id="form-warning"></p>
     </div>
 
     <div class="scenes">
@@ -239,7 +321,7 @@
       <div class="scene reveal">
         <div class="scene-head"><span class="scene-num">ฉาก 02 · 5-11 วิ</span></div>
         <p class="scene-title">Reveal — โชว์สินค้าใกล้ ๆ</p>
-        <p class="scene-note">หมุนช้า ๆ โชว์พื้นผิวและป้ายน้ำหนัก ไม่มี action ซับซ้อนให้ AI ทำพลาดง่าย</p>
+        <p class="scene-note">หมุนช้า ๆ โชว์พื้นผิวและรายละเอียด ไม่มี action ซับซ้อนให้ AI ทำพลาดง่าย</p>
         <textarea class="prompt-box" id="out-reveal" readonly></textarea>
         <div class="scene-foot"><button class="copy-btn" onclick="copyBox('out-reveal', this)">คัดลอก</button></div>
       </div>
@@ -249,7 +331,10 @@
         <p class="scene-title">Demo — ใช้งานจริง</p>
         <p class="scene-note" id="demo-note">โชว์ท่าออกกำลังกายเพื่อสร้างความน่าเชื่อถือและปิดการขาย</p>
         <textarea class="prompt-box" id="out-demo" readonly></textarea>
-        <div class="scene-foot"><button class="copy-btn" onclick="copyBox('out-demo', this)">คัดลอก</button></div>
+        <div class="scene-foot">
+          <span class="ref-check" id="ref-check-note">⚠ ต้องติ๊ก "แนบรูปอ้างอิงแล้ว" ก่อนคัดลอกฉากนี้</span>
+          <button class="copy-btn" id="demo-copy-btn" onclick="copyBox('out-demo', this)">คัดลอก</button>
+        </div>
       </div>
 
       <div class="caption-out">
@@ -262,22 +347,22 @@
   <footer>
     ก่อนวางลง Google Flow — เช็ค aspect ratio เป็น 9:16 ทุกครั้งก่อนกด generate (ค่ามักรีเซ็ตเป็น 16:9) และเลือกโหมดวิดีโอ/Veo ไม่ใช่ Imagen เพราะสองโหมดนี้แยกกัน สำหรับหมวดสัตว์เลี้ยง/ผู้สูงอายุ ต้องแนบรูปจริงเป็น reference image ทุกครั้งที่ generate ฉาก Demo เพื่อให้ผลลัพธ์สมจริงพอ ไม่ใช่แค่ copy prompt ไปวางเฉย ๆ<br><br>
     ทุก prompt ในหน้านี้ปิดท้ายด้วยคำสั่งห้ามมีตัวอักษร/ซับไตเติล/โลโก้ในวิดีโอแล้ว (no on-screen text, no captions, no subtitles, no watermark, no logos) แต่โมเดลวิดีโอบางตัวยังหลุดใส่ตัวอักษรเบลอ ๆ มาได้เอง ให้เช็คคลิปที่ได้ทุกครั้งก่อนตัดต่อ ถ้ายังมีตัวอักษรติดมา ให้ generate ใหม่หรือครอปฉากนั้นออก<br><br>
-    <strong style="color:var(--gold);">ก่อนโพสต์ทุกคลิป:</strong> เปิดตัวเลือก "AI-generated content" ในหน้าอัปโหลดของ TikTok เสมอ (กฎ TikTok Shop 2026 บังคับติดป้ายคลิปที่ใช้ AI สร้างจนดูเหมือนจริง) และเช็คว่าฉากที่ generate ไม่ได้ทำให้สินค้าดูเวอร์เกินจริงเทียบกับของจริง โดยเฉพาะถ้าขายสินค้าหมวดสุขภาพ/ความงาม/ทำความสะอาด ซึ่งมีกฎเข้มกว่าหมวดอื่น
+    <strong style="color:var(--gold);">ก่อนโพสต์ทุกคลิป:</strong> เปิดตัวเลือก "AI-generated content" ในหน้าอัปโหลดเสมอ — ตั้งแต่ 21 ก.ค. 2026 TikTok บังคับติด label เปิดเผยเนื้อหาที่สร้าง/แก้ด้วย AI จนดูสมจริง (ไม่ใช่แค่ในหมวด Shop แต่ครอบคลุมทุกคลิป/โฆษณาที่มีภาพ เสียง หรือวิดีโอสังเคราะห์ที่สมจริง เช่น ฉาก Demo ที่ animate จากรูปสัตว์เลี้ยง/คนจริงในหน้านี้) ไม่ติดป้ายมีความเสี่ยงถูกลบคลิปหรือแบนบัญชี และเช็คว่าฉากที่ generate ไม่ได้ทำให้สินค้าดูเวอร์เกินจริงเทียบกับของจริง โดยเฉพาะถ้าขายสินค้าหมวดสุขภาพ/ความงาม/ทำความสะอาด ซึ่งมีกฎเข้มกว่าหมวดอื่น
   </footer>
 </div>
 
 <script>
 const products = {
-  'พัดลมมือถือพกพา': { category:'general', color:'white', material:'matte ABS plastic', weight:'300G', presenter:'young Thai woman in casual outfit', benefit:'พกพาง่าย ลมแรง ชาร์จไวไม่ร้อนเครื่อง' },
-  'หมอนรองคอเป่าลม': { category:'general', color:'navy blue', material:'soft velvet fabric', weight:'—', presenter:'office worker in business casual', benefit:'พับเก็บง่าย รองรับคอพอดี ไม่ปวดคอตอนนั่งรถ' },
-  'เสื่อโยคะพับได้': { category:'general', color:'sage green', material:'non-slip TPE foam', weight:'—', presenter:'young woman in athletic wear', benefit:'กันลื่น พับเก็บง่าย น้ำหนักเบา' },
-  'กาต้มน้ำไฟฟ้าพกพา': { category:'general', color:'matte black', material:'brushed stainless steel', weight:'—', presenter:'young professional in home kitchen', benefit:'ต้มน้ำไวใน 3 นาที พกพาไปทำงานได้' },
-  'แปรงขนไฟฟ้าสำหรับสุนัข': { category:'pet', color:'mint green', material:'matte plastic with soft silicone grip', weight:'—', presenter:'—', benefit:'ขนหลุดน้อยลง แปรงเบามือ สุนัขไม่กลัว' },
-  'ที่ตัดเล็บแมวอัตโนมัติ': { category:'pet', color:'pastel pink', material:'matte silicone grip', weight:'—', presenter:'—', benefit:'ตัดเล็บไม่เจ็บ เสียงเงียบ แมวไม่ตกใจ' },
-  'เครื่องให้อาหารสัตว์เลี้ยงอัตโนมัติ': { category:'pet', color:'white', material:'matte plastic with clear container', weight:'—', presenter:'—', benefit:'ให้อาหารตรงเวลา แม้ไม่อยู่บ้าน' },
-  'ไม้เท้าพับสำหรับผู้สูงอายุ': { category:'elderly', color:'black', material:'aluminum with rubber non-slip grip', weight:'—', presenter:'—', benefit:'พับเก็บพกพาง่าย กันลื่นทุกพื้นผิว' },
-  'เข่าพยุงสำหรับผู้สูงอายุ': { category:'elderly', color:'beige', material:'breathable neoprene', weight:'—', presenter:'—', benefit:'พยุงเข่า ลดอาการปวด ใส่สบายไม่รัดแน่น' },
-  'ราวจับกันลื่นติดผนังห้องน้ำ': { category:'elderly', color:'white', material:'stainless steel with anti-slip coating', weight:'—', presenter:'—', benefit:'กันลื่นในห้องน้ำ ติดตั้งง่าย ไม่ต้องเจาะกำแพงเยอะ' }
+  'พัดลมมือถือพกพา': { category:'general', color:'white', material:'matte ABS plastic', hasLabel:true, presenter:'young Thai woman in casual outfit', benefit:'พกพาง่าย ลมแรง ชาร์จไวไม่ร้อนเครื่อง', benefitEn:'easy to carry, strong airflow, fast-charging without overheating', descEn:'portable handheld mini fan' },
+  'หมอนรองคอเป่าลม': { category:'general', color:'navy blue', material:'soft velvet fabric', hasLabel:false, presenter:'office worker in business casual', benefit:'พับเก็บง่าย รองรับคอพอดี ไม่ปวดคอตอนนั่งรถ', benefitEn:'folds compact, supports the neck perfectly, prevents neck pain during travel', descEn:'inflatable travel neck pillow' },
+  'เสื่อโยคะพับได้': { category:'general', color:'sage green', material:'non-slip TPE foam', hasLabel:false, presenter:'young woman in athletic wear', benefit:'กันลื่น พับเก็บง่าย น้ำหนักเบา', benefitEn:'non-slip surface, folds compact, lightweight', descEn:'foldable yoga mat' },
+  'กาต้มน้ำไฟฟ้าพกพา': { category:'general', color:'matte black', material:'brushed stainless steel', hasLabel:false, presenter:'young professional in home kitchen', benefit:'ต้มน้ำไวใน 3 นาที พกพาไปทำงานได้', benefitEn:'boils water in 3 minutes, portable enough to take to work', descEn:'portable electric kettle' },
+  'แปรงขนไฟฟ้าสำหรับสุนัข': { category:'pet', color:'mint green', material:'matte plastic with soft silicone grip', hasLabel:false, presenter:'—', benefit:'ขนหลุดน้อยลง แปรงเบามือ สุนัขไม่กลัว', benefitEn:'reduces shedding, gentle brushing motion, keeps dogs calm and unafraid', descEn:'electric pet grooming brush for dogs' },
+  'ที่ตัดเล็บแมวอัตโนมัติ': { category:'pet', color:'pastel pink', material:'matte silicone grip', hasLabel:false, presenter:'—', benefit:'ตัดเล็บไม่เจ็บ เสียงเงียบ แมวไม่ตกใจ', benefitEn:'painless nail trimming, quiet operation, keeps cats calm', descEn:'automatic cat nail clipper' },
+  'เครื่องให้อาหารสัตว์เลี้ยงอัตโนมัติ': { category:'pet', color:'white', material:'matte plastic with clear container', hasLabel:false, presenter:'—', benefit:'ให้อาหารตรงเวลา แม้ไม่อยู่บ้าน', benefitEn:'dispenses food on schedule, even when owners are away', descEn:'automatic pet feeder' },
+  'ไม้เท้าพับสำหรับผู้สูงอายุ': { category:'elderly', color:'black', material:'aluminum with rubber non-slip grip', hasLabel:false, presenter:'—', benefit:'พับเก็บพกพาง่าย กันลื่นทุกพื้นผิว', benefitEn:'folds compact for easy carrying, non-slip on every surface', descEn:'foldable walking cane for elderly' },
+  'เข่าพยุงสำหรับผู้สูงอายุ': { category:'elderly', color:'beige', material:'breathable neoprene', hasLabel:false, presenter:'—', benefit:'พยุงเข่า ลดอาการปวด ใส่สบายไม่รัดแน่น', benefitEn:'supports the knee, reduces pain, comfortable without feeling too tight', descEn:'knee support brace for elderly' },
+  'ราวจับกันลื่นติดผนังห้องน้ำ': { category:'elderly', color:'white', material:'stainless steel with anti-slip coating', hasLabel:false, presenter:'—', benefit:'กันลื่นในห้องน้ำ ติดตั้งง่าย ไม่ต้องเจาะกำแพงเยอะ', benefitEn:'prevents slipping in the bathroom, easy to install without heavy drilling', descEn:'anti-slip bathroom grab bar' }
 };
 
 // คำสั่งท้าย prompt กำกับไม่ให้มีตัวอักษร/ซับไตเติล/โลโก้ปรากฏในวิดีโอ
@@ -298,54 +383,96 @@ function loadProduct(name){
   if(!name || !products[name]){ return; }
   const p = products[name];
   document.getElementById('product-name').value = name;
-  currentCategory = p.category || 'general';
+  document.getElementById('category-select').value = p.category || 'general';
   document.getElementById('color').value = p.color;
   document.getElementById('material').value = p.material;
-  document.getElementById('weight').value = p.weight;
+  document.getElementById('has-label').checked = !!p.hasLabel;
   document.getElementById('presenter').value = p.presenter;
   document.getElementById('benefit').value = p.benefit;
+  document.getElementById('benefit-en').value = p.benefitEn || '';
+  document.getElementById('product-desc-en').value = p.descEn || '';
+  document.getElementById('ref-attached').checked = false;
+  updateDemoAvailability();
   generate();
 }
 
 function saveProduct(){
   const name = val('product-name');
-  if(!name){ return; }
+  if(!name){
+    showWarning('กรุณากรอกชื่อสินค้า (ภาษาไทย) ก่อนบันทึก');
+    return;
+  }
   products[name] = {
-    category: currentCategory,
+    category: document.getElementById('category-select').value,
     color: val('color'),
     material: val('material'),
-    weight: val('weight'),
+    hasLabel: document.getElementById('has-label').checked,
     presenter: val('presenter'),
-    benefit: val('benefit')
+    benefit: val('benefit'),
+    benefitEn: val('benefit-en'),
+    descEn: val('product-desc-en')
   };
   refreshProductSelect(name);
+  hideWarning();
 }
 
-let currentCategory = 'general';
+function showWarning(msg){
+  const w = document.getElementById('form-warning');
+  w.textContent = msg;
+  w.style.display = 'block';
+}
+function hideWarning(){
+  document.getElementById('form-warning').style.display = 'none';
+}
+
+function updateDemoAvailability(){
+  const category = document.getElementById('category-select').value;
+  const refAttached = document.getElementById('ref-attached').checked;
+  const btn = document.getElementById('demo-copy-btn');
+  const note = document.getElementById('ref-check-note');
+  const needsRef = (category === 'pet' || category === 'elderly');
+  if(needsRef && !refAttached){
+    btn.disabled = true;
+    note.style.display = 'inline-flex';
+  } else {
+    btn.disabled = false;
+    note.style.display = 'none';
+  }
+}
 
 function generate(){
+  hideWarning();
   const productName = val('product-name');
+  const descEn = val('product-desc-en');
   const color = val('color');
   const material = val('material');
-  const weight = val('weight');
+  const hasLabel = document.getElementById('has-label').checked;
   const presenter = val('presenter');
   const benefit = val('benefit');
-  const category = currentCategory;
+  const benefitEn = val('benefit-en');
+  const category = document.getElementById('category-select').value;
 
-  // หมายเหตุ: จุดขายหลัก (benefit) ใช้เป็น "แรงจูงใจของฉาก" เท่านั้น ไม่ใส่เป็นข้อความ/คำพูดอ้างอิงในภาพ
-  const hook = `Close-up shot of a ${color} ${material} ${productName} being set down firmly on a wooden table, camera push-in, framing emphasizes the product's key feature: ${benefit}, dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format, ${NO_TEXT}`;
+  if(!productName || !descEn || !benefitEn){
+    showWarning('กรุณากรอกให้ครบ: ชื่อสินค้า, คำอธิบายสินค้า (อังกฤษ), และจุดขายหลัก (อังกฤษ) — ช่องเหล่านี้คือสิ่งที่ถูกส่งเข้า prompt จริง');
+    return;
+  }
 
-  const reveal = `Extreme close-up product shot of a ${color} ${material} ${productName}, textured surface${weight && weight !== '—' ? ', plain unlabeled surface (no printed text or numbers)' : ''}, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
+  const surfaceNote = hasLabel ? ', plain unlabeled surface (no printed text, numbers, or logos)' : '';
+
+  // หมายเหตุ: benefitEn/descEn เป็น "แรงจูงใจของฉาก" ที่ถูกส่งให้ AI จริง ไม่ใช่ข้อความ/คำพูดอ้างอิงในภาพ
+  const hook = `Close-up shot of a ${color} ${material} ${descEn} being set down firmly on a wooden table, camera push-in, framing emphasizes the product's key feature: ${benefitEn}, dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format, ${NO_TEXT}`;
+
+  const reveal = `Extreme close-up product shot of a ${color} ${material} ${descEn}, textured surface${surfaceNote}, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
 
   let demo, demoNote;
   if(category === 'pet'){
-    demo = `Using the attached reference photo of the pet, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at the ${productName} placed nearby, subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format, ${NO_TEXT}`;
+    demo = `Using the attached reference photo of the pet, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at the ${descEn} placed nearby, subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format, ${NO_TEXT}`;
     demoNote = 'แนบรูปสัตว์เลี้ยงจริงเป็น reference image ก่อน generate เพื่อให้หน้าตา/ลายขนตรงกับตัวจริง และจำกัด motion ให้สั้น (หันหัว/กระดิกหาง) หลีกเลี่ยง action เต็มตัวอย่างการวิ่งที่ AI ยังทำไม่สมจริง';
   } else if(category === 'elderly'){
-    demo = `Using the attached reference photo of the person, animate a short close-up clip: hands gripping and adjusting the ${productName}, slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format, ${NO_TEXT}`;
+    demo = `Using the attached reference photo of the person, animate a short close-up clip: hands gripping and adjusting the ${descEn}, slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format, ${NO_TEXT}`;
     demoNote = 'แนบรูปคนจริงเป็น reference image ก่อน generate แล้วโฟกัสระยะใกล้ที่มือ/สีหน้าแทนท่าเดินเต็มตัว เพราะ AI ยังทำท่าเดิน/น้ำหนักตัวคนสูงอายุแบบเต็มตัวไม่สมจริงพอ';
   } else {
-    demo = `A ${presenter} demonstrating the ${color} ${productName} in everyday use, natural hand movements, motion clearly conveys the product benefit: ${benefit}, bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format, ${NO_TEXT}`;
+    demo = `A ${presenter} demonstrating the ${color} ${descEn} in everyday use, natural hand movements, motion clearly conveys the product benefit: ${benefitEn}, bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format, ${NO_TEXT}`;
     demoNote = 'โชว์การใช้งานจริงเพื่อสร้างความน่าเชื่อถือและปิดการขาย';
   }
 
@@ -353,13 +480,16 @@ function generate(){
   setVal('out-reveal', reveal);
   setVal('out-demo', demo);
   document.getElementById('demo-note').textContent = demoNote;
+  // ซับไตเติลแสดงเป็นภาษาไทยตามที่กรอก — ใช้สำหรับใส่เองใน CapCut เท่านั้น ไม่ถูกส่งเข้า prompt
   document.getElementById('out-caption').textContent = benefit || '—';
+  updateDemoAvailability();
 }
 
 function val(id){ return document.getElementById(id).value.trim(); }
 function setVal(id, text){ document.getElementById(id).value = text; }
 
 function copyBox(id, btn){
+  if(btn.disabled){ return; }
   const box = document.getElementById(id);
   if(!box.value){ return; }
   navigator.clipboard.writeText(box.value).then(()=>{
@@ -367,10 +497,15 @@ function copyBox(id, btn){
     btn.textContent = 'คัดลอกแล้ว';
     btn.classList.add('copied');
     setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  }).catch(()=>{
+    const original = btn.textContent;
+    btn.textContent = 'คัดลอกไม่สำเร็จ';
+    setTimeout(()=>{ btn.textContent = original; }, 1500);
   });
 }
 
 refreshProductSelect('พัดลมมือถือพกพา');
+updateDemoAvailability();
 generate();
 </script>
 </body>
