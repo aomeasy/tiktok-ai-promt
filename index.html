@@ -234,7 +234,7 @@
   <header>
     <p class="eyebrow">prototype · v0.3</p>
     <h1>ตัวช่วยสร้างสคริปต์ + prompt สำหรับ Google Flow</h1>
-    <p>กรอกรายละเอียดสินค้าครั้งเดียว ระบบจะประกอบเป็น prompt ภาษาอังกฤษ 3 ฉาก (Hook, Reveal, Demo) พร้อมวางลง Google Flow ได้ทันที ทุก prompt กำกับให้วิดีโอไม่มีข้อความ/ซับไตเติล/ตัวอักษรใด ๆ ติดในภาพ (จะไปใส่ซับไตเติลเองทีหลังใน CapCut) หมายเหตุ: ช่องที่ระบุ "ส่งให้ AI" ต้องกรอกเป็นภาษาอังกฤษ เพราะโมเดลวิดีโอเข้าใจ prompt ภาษาอังกฤษเท่านั้น ส่วนช่องภาษาไทยใช้แสดงผลในหน้านี้และเป็นซับไตเติลเท่านั้น ไม่ถูกส่งเข้า prompt</p>
+    <p>กรอกรายละเอียดสินค้าครั้งเดียว ระบบจะประกอบเป็น prompt ภาษาอังกฤษ 3 ฉาก (Hook, Reveal, Demo) พร้อมวางลง Google Flow ได้ทันที ทุกฉากกำกับให้ AI อ้างอิงรูปสินค้าจริงที่แนบไว้ (product reference image) เพื่อให้หน้าตาสินค้าในคลิปตรงกับของจริงที่ขาย ไม่ใช่แค่คำอธิบาย และกำกับไม่ให้มีข้อความ/ซับไตเติล/ตัวอักษรใด ๆ ติดในภาพ (จะไปใส่ซับไตเติลเองทีหลังใน CapCut) หมายเหตุ: ช่องที่ระบุ "ส่งให้ AI" ต้องกรอกเป็นภาษาอังกฤษ เพราะโมเดลวิดีโอเข้าใจ prompt ภาษาอังกฤษเท่านั้น ส่วนช่องภาษาไทยใช้แสดงผลในหน้านี้และเป็นซับไตเติลเท่านั้น ไม่ถูกส่งเข้า prompt</p>
   </header>
 
   <div class="grid">
@@ -248,7 +248,7 @@
 
       <div class="field">
         <label for="category-select">หมวดหมู่สินค้า</label>
-        <select id="category-select" onchange="updateDemoAvailability()">
+        <select id="category-select" onchange="updateCopyAvailability()">
           <option value="general">ทั่วไป</option>
           <option value="pet">สัตว์เลี้ยง</option>
           <option value="elderly">ผู้สูงอายุ</option>
@@ -298,8 +298,13 @@
       </div>
 
       <div class="checkbox-field">
-        <input type="checkbox" id="ref-attached" onchange="updateDemoAvailability()">
-        <label for="ref-attached">แนบรูปสัตว์เลี้ยง/คนจริงเป็น reference image ใน Google Flow แล้ว (จำเป็นเฉพาะหมวดสัตว์เลี้ยง/ผู้สูงอายุ ก่อนคัดลอก prompt ฉาก Demo)</label>
+        <input type="checkbox" id="product-ref-attached" onchange="updateCopyAvailability()">
+        <label for="product-ref-attached">แนบรูปสินค้าจริงเป็น reference image ใน Google Flow แล้ว (จำเป็นทุกฉาก — Hook, Reveal, Demo)</label>
+      </div>
+
+      <div class="checkbox-field">
+        <input type="checkbox" id="subject-ref-attached" onchange="updateCopyAvailability()">
+        <label for="subject-ref-attached">แนบรูปสัตว์เลี้ยง/คนจริงเป็น reference image เพิ่มเติมแล้ว (จำเป็นเฉพาะหมวดสัตว์เลี้ยง/ผู้สูงอายุ สำหรับฉาก Demo)</label>
       </div>
 
       <button class="generate-btn" onclick="generate()">สร้าง prompt ทั้ง 3 ฉาก</button>
@@ -315,7 +320,10 @@
         <p class="scene-title">Hook — เปิดฉากดึงความสนใจ</p>
         <p class="scene-note">ใช้จุดขายหลักของสินค้าเป็นแรงจูงใจฉาก (ไม่ใช่ข้อความในภาพ) เพื่อดึงความสนใจใน 3 วินาทีแรก</p>
         <textarea class="prompt-box" id="out-hook" readonly></textarea>
-        <div class="scene-foot"><button class="copy-btn" onclick="copyBox('out-hook', this)">คัดลอก</button></div>
+        <div class="scene-foot">
+          <span class="ref-check" id="hook-ref-note">⚠ ต้องติ๊ก "แนบรูปสินค้า" ก่อนคัดลอกฉากนี้</span>
+          <button class="copy-btn" id="hook-copy-btn" onclick="copyBox('out-hook', this)">คัดลอก</button>
+        </div>
       </div>
 
       <div class="scene reveal">
@@ -323,7 +331,10 @@
         <p class="scene-title">Reveal — โชว์สินค้าใกล้ ๆ</p>
         <p class="scene-note">หมุนช้า ๆ โชว์พื้นผิวและรายละเอียด ไม่มี action ซับซ้อนให้ AI ทำพลาดง่าย</p>
         <textarea class="prompt-box" id="out-reveal" readonly></textarea>
-        <div class="scene-foot"><button class="copy-btn" onclick="copyBox('out-reveal', this)">คัดลอก</button></div>
+        <div class="scene-foot">
+          <span class="ref-check" id="reveal-ref-note">⚠ ต้องติ๊ก "แนบรูปสินค้า" ก่อนคัดลอกฉากนี้</span>
+          <button class="copy-btn" id="reveal-copy-btn" onclick="copyBox('out-reveal', this)">คัดลอก</button>
+        </div>
       </div>
 
       <div class="scene demo">
@@ -332,7 +343,7 @@
         <p class="scene-note" id="demo-note">โชว์ท่าออกกำลังกายเพื่อสร้างความน่าเชื่อถือและปิดการขาย</p>
         <textarea class="prompt-box" id="out-demo" readonly></textarea>
         <div class="scene-foot">
-          <span class="ref-check" id="ref-check-note">⚠ ต้องติ๊ก "แนบรูปอ้างอิงแล้ว" ก่อนคัดลอกฉากนี้</span>
+          <span class="ref-check" id="demo-ref-note">⚠ ต้องติ๊กช่อง "แนบรูปอ้างอิง" ให้ครบก่อนคัดลอกฉากนี้</span>
           <button class="copy-btn" id="demo-copy-btn" onclick="copyBox('out-demo', this)">คัดลอก</button>
         </div>
       </div>
@@ -345,7 +356,7 @@
   </div>
 
   <footer>
-    ก่อนวางลง Google Flow — เช็ค aspect ratio เป็น 9:16 ทุกครั้งก่อนกด generate (ค่ามักรีเซ็ตเป็น 16:9) และเลือกโหมดวิดีโอ/Veo ไม่ใช่ Imagen เพราะสองโหมดนี้แยกกัน สำหรับหมวดสัตว์เลี้ยง/ผู้สูงอายุ ต้องแนบรูปจริงเป็น reference image ทุกครั้งที่ generate ฉาก Demo เพื่อให้ผลลัพธ์สมจริงพอ ไม่ใช่แค่ copy prompt ไปวางเฉย ๆ<br><br>
+    ก่อนวางลง Google Flow — เช็ค aspect ratio เป็น 9:16 ทุกครั้งก่อนกด generate (ค่ามักรีเซ็ตเป็น 16:9) และเลือกโหมดวิดีโอ/Veo ไม่ใช่ Imagen เพราะสองโหมดนี้แยกกัน ทุกฉาก (Hook/Reveal/Demo) ต้องแนบรูปสินค้าจริงเป็น reference image ก่อน generate เสมอ เพื่อให้สินค้าที่ออกมาตรงกับของจริงที่ขาย ส่วนหมวดสัตว์เลี้ยง/ผู้สูงอายุ ต้องแนบรูปสัตว์เลี้ยง/คนจริงเพิ่มอีกใบสำหรับฉาก Demo — ไม่ใช่แค่ copy prompt ไปวางเฉย ๆ<br><br>
     ทุก prompt ในหน้านี้ปิดท้ายด้วยคำสั่งห้ามมีตัวอักษร/ซับไตเติล/โลโก้ในวิดีโอแล้ว (no on-screen text, no captions, no subtitles, no watermark, no logos) แต่โมเดลวิดีโอบางตัวยังหลุดใส่ตัวอักษรเบลอ ๆ มาได้เอง ให้เช็คคลิปที่ได้ทุกครั้งก่อนตัดต่อ ถ้ายังมีตัวอักษรติดมา ให้ generate ใหม่หรือครอปฉากนั้นออก<br><br>
     <strong style="color:var(--gold);">ก่อนโพสต์ทุกคลิป:</strong> เปิดตัวเลือก "AI-generated content" ในหน้าอัปโหลดเสมอ — ตั้งแต่ 21 ก.ค. 2026 TikTok บังคับติด label เปิดเผยเนื้อหาที่สร้าง/แก้ด้วย AI จนดูสมจริง (ไม่ใช่แค่ในหมวด Shop แต่ครอบคลุมทุกคลิป/โฆษณาที่มีภาพ เสียง หรือวิดีโอสังเคราะห์ที่สมจริง เช่น ฉาก Demo ที่ animate จากรูปสัตว์เลี้ยง/คนจริงในหน้านี้) ไม่ติดป้ายมีความเสี่ยงถูกลบคลิปหรือแบนบัญชี และเช็คว่าฉากที่ generate ไม่ได้ทำให้สินค้าดูเวอร์เกินจริงเทียบกับของจริง โดยเฉพาะถ้าขายสินค้าหมวดสุขภาพ/ความงาม/ทำความสะอาด ซึ่งมีกฎเข้มกว่าหมวดอื่น
   </footer>
@@ -391,8 +402,9 @@ function loadProduct(name){
   document.getElementById('benefit').value = p.benefit;
   document.getElementById('benefit-en').value = p.benefitEn || '';
   document.getElementById('product-desc-en').value = p.descEn || '';
-  document.getElementById('ref-attached').checked = false;
-  updateDemoAvailability();
+  document.getElementById('product-ref-attached').checked = false;
+  document.getElementById('subject-ref-attached').checked = false;
+  updateCopyAvailability();
   generate();
 }
 
@@ -425,18 +437,35 @@ function hideWarning(){
   document.getElementById('form-warning').style.display = 'none';
 }
 
-function updateDemoAvailability(){
+function updateCopyAvailability(){
   const category = document.getElementById('category-select').value;
-  const refAttached = document.getElementById('ref-attached').checked;
-  const btn = document.getElementById('demo-copy-btn');
-  const note = document.getElementById('ref-check-note');
-  const needsRef = (category === 'pet' || category === 'elderly');
-  if(needsRef && !refAttached){
-    btn.disabled = true;
-    note.style.display = 'inline-flex';
+  const productRefAttached = document.getElementById('product-ref-attached').checked;
+  const subjectRefAttached = document.getElementById('subject-ref-attached').checked;
+  const needsSubjectRef = (category === 'pet' || category === 'elderly');
+
+  // Hook and Reveal only need the product reference image
+  [['hook-copy-btn','hook-ref-note'], ['reveal-copy-btn','reveal-ref-note']].forEach(([btnId, noteId])=>{
+    const btn = document.getElementById(btnId);
+    const note = document.getElementById(noteId);
+    if(!productRefAttached){
+      btn.disabled = true;
+      note.style.display = 'inline-flex';
+    } else {
+      btn.disabled = false;
+      note.style.display = 'none';
+    }
+  });
+
+  // Demo needs the product reference image, plus a subject (pet/person) reference for pet/elderly
+  const demoBtn = document.getElementById('demo-copy-btn');
+  const demoNote = document.getElementById('demo-ref-note');
+  const demoOk = productRefAttached && (!needsSubjectRef || subjectRefAttached);
+  if(!demoOk){
+    demoBtn.disabled = true;
+    demoNote.style.display = 'inline-flex';
   } else {
-    btn.disabled = false;
-    note.style.display = 'none';
+    demoBtn.disabled = false;
+    demoNote.style.display = 'none';
   }
 }
 
@@ -458,22 +487,24 @@ function generate(){
   }
 
   const surfaceNote = hasLabel ? ', plain unlabeled surface (no printed text, numbers, or logos)' : '';
+  // ทุกฉากต้องอ้างอิงรูปสินค้าจริงที่แนบไว้ ไม่ใช่ปล่อยให้ AI จินตนาการสินค้าขึ้นมาเอง
+  const productRefNote = 'using the attached product reference image to match its exact shape, color, proportions, and design';
 
   // หมายเหตุ: benefitEn/descEn เป็น "แรงจูงใจของฉาก" ที่ถูกส่งให้ AI จริง ไม่ใช่ข้อความ/คำพูดอ้างอิงในภาพ
-  const hook = `Close-up shot of a ${color} ${material} ${descEn} being set down firmly on a wooden table, camera push-in, framing emphasizes the product's key feature: ${benefitEn}, dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format, ${NO_TEXT}`;
+  const hook = `Close-up shot of a ${color} ${material} ${descEn}, ${productRefNote}, being set down firmly on a wooden table, camera push-in, framing emphasizes the product's key feature: ${benefitEn}, dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format, ${NO_TEXT}`;
 
-  const reveal = `Extreme close-up product shot of a ${color} ${material} ${descEn}, textured surface${surfaceNote}, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
+  const reveal = `Extreme close-up product shot of a ${color} ${material} ${descEn}, ${productRefNote}, textured surface${surfaceNote}, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
 
   let demo, demoNote;
   if(category === 'pet'){
-    demo = `Using the attached reference photo of the pet, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at the ${descEn} placed nearby, subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format, ${NO_TEXT}`;
-    demoNote = 'แนบรูปสัตว์เลี้ยงจริงเป็น reference image ก่อน generate เพื่อให้หน้าตา/ลายขนตรงกับตัวจริง และจำกัด motion ให้สั้น (หันหัว/กระดิกหาง) หลีกเลี่ยง action เต็มตัวอย่างการวิ่งที่ AI ยังทำไม่สมจริง';
+    demo = `Using the attached reference photo of the pet and the attached product reference image, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at the ${descEn} placed nearby (${productRefNote}), subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format, ${NO_TEXT}`;
+    demoNote = 'แนบรูปสัตว์เลี้ยงจริง + รูปสินค้าจริงเป็น reference image ก่อน generate เพื่อให้หน้าตา/ลายขนและตัวสินค้าตรงกับของจริง และจำกัด motion ให้สั้น (หันหัว/กระดิกหาง) หลีกเลี่ยง action เต็มตัวอย่างการวิ่งที่ AI ยังทำไม่สมจริง';
   } else if(category === 'elderly'){
-    demo = `Using the attached reference photo of the person, animate a short close-up clip: hands gripping and adjusting the ${descEn}, slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format, ${NO_TEXT}`;
-    demoNote = 'แนบรูปคนจริงเป็น reference image ก่อน generate แล้วโฟกัสระยะใกล้ที่มือ/สีหน้าแทนท่าเดินเต็มตัว เพราะ AI ยังทำท่าเดิน/น้ำหนักตัวคนสูงอายุแบบเต็มตัวไม่สมจริงพอ';
+    demo = `Using the attached reference photo of the person and the attached product reference image, animate a short close-up clip: hands gripping and adjusting the ${descEn} (${productRefNote}), slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format, ${NO_TEXT}`;
+    demoNote = 'แนบรูปคนจริง + รูปสินค้าจริงเป็น reference image ก่อน generate แล้วโฟกัสระยะใกล้ที่มือ/สีหน้าแทนท่าเดินเต็มตัว เพราะ AI ยังทำท่าเดิน/น้ำหนักตัวคนสูงอายุแบบเต็มตัวไม่สมจริงพอ';
   } else {
-    demo = `A ${presenter} demonstrating the ${color} ${descEn} in everyday use, natural hand movements, motion clearly conveys the product benefit: ${benefitEn}, bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format, ${NO_TEXT}`;
-    demoNote = 'โชว์การใช้งานจริงเพื่อสร้างความน่าเชื่อถือและปิดการขาย';
+    demo = `A ${presenter} demonstrating the ${color} ${descEn} in everyday use, ${productRefNote}, natural hand movements, motion clearly conveys the product benefit: ${benefitEn}, bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format, ${NO_TEXT}`;
+    demoNote = 'แนบรูปสินค้าจริงเป็น reference image ก่อน generate เพื่อให้สินค้าที่คนพรีเซนต์ถือในคลิปตรงกับของจริง';
   }
 
   setVal('out-hook', hook);
@@ -482,7 +513,7 @@ function generate(){
   document.getElementById('demo-note').textContent = demoNote;
   // ซับไตเติลแสดงเป็นภาษาไทยตามที่กรอก — ใช้สำหรับใส่เองใน CapCut เท่านั้น ไม่ถูกส่งเข้า prompt
   document.getElementById('out-caption').textContent = benefit || '—';
-  updateDemoAvailability();
+  updateCopyAvailability();
 }
 
 function val(id){ return document.getElementById(id).value.trim(); }
@@ -505,7 +536,7 @@ function copyBox(id, btn){
 }
 
 refreshProductSelect('พัดลมมือถือพกพา');
-updateDemoAvailability();
+updateCopyAvailability();
 generate();
 </script>
 </body>
