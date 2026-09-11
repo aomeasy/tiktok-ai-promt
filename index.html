@@ -20,6 +20,7 @@
     --gold:#E8B33D;
     --gold-dim:#5A4A24;
     --danger:#D9705A;
+    --teal:#5FBFB3;
   }
   *{box-sizing:border-box;}
   body{
@@ -99,6 +100,13 @@
     color:var(--ink-dim);
     line-height:1.5;
   }
+  .checkbox-field.asmr{
+    background:rgba(95,191,179,0.08);
+    border:1px solid var(--teal);
+    border-radius:6px;
+    padding:0.6rem 0.7rem;
+  }
+  .checkbox-field.asmr label{color:var(--ink);}
   .generate-btn{
     width:100%;
     background:var(--plum);
@@ -224,7 +232,7 @@
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">prototype · v0.3</p>
+    <p class="eyebrow">prototype · v0.4</p>
     <h1>ตัวช่วยสร้างสคริปต์ + prompt สำหรับ Google Flow</h1>
     <p>กรอกรายละเอียดสินค้าครั้งเดียว ระบบจะประกอบเป็น prompt ภาษาอังกฤษ 3 ฉาก (Hook, Reveal, Demo) พร้อมวางลง Google Flow ได้ทันที ทุกฉากกำกับให้ AI อ้างอิงรูปสินค้าจริงที่แนบไว้ (product reference image) เพื่อให้หน้าตา สี และพื้นผิวของสินค้าในคลิปตรงกับของจริงที่ขาย — จึงไม่ต้องพิมพ์ระบุสี/วัสดุเองอีกต่อไป ให้ AI ดูจากรูปแทน และกำกับไม่ให้มีข้อความ/ซับไตเติล/ตัวอักษรใด ๆ ติดในภาพ (จะไปใส่ซับไตเติลเองทีหลังใน CapCut) หมายเหตุ: ช่องที่ระบุ "ส่งให้ AI" ต้องกรอกเป็นภาษาอังกฤษ เพราะโมเดลวิดีโอเข้าใจ prompt ภาษาอังกฤษเท่านั้น ส่วนช่องภาษาไทยใช้แสดงผลในหน้านี้และเป็นซับไตเติลเท่านั้น ไม่ถูกส่งเข้า prompt</p>
   </header>
@@ -263,6 +271,11 @@
         <label for="has-label">มีตัวอักษร/โลโก้/ป้ายพิมพ์อยู่บนตัวสินค้าจริง (ใช้กันไม่ให้ AI เผลอ generate ตัวอักษรซ้ำ)</label>
       </div>
 
+      <div class="checkbox-field asmr">
+        <input type="checkbox" id="asmr-mode" onchange="generate()">
+        <label for="asmr-mode">โทน ASMR — macro close-up, มือขยับช้า ๆ สัมผัสพื้นผิวสินค้า, แสงนุ่ม, จังหวะช้าน่าฟัง (เหมาะกับคลิปที่เน้นพื้นผิว/สัมผัส เช่น ผ้า ขนสัตว์ วัสดุนุ่ม)</label>
+      </div>
+
       <div class="field">
         <label for="presenter">คำอธิบายผู้พรีเซนต์ (ภาษาอังกฤษ — ใช้เฉพาะหมวดทั่วไป)</label>
         <input id="presenter" value="young Thai woman in casual outfit">
@@ -290,7 +303,7 @@
       <div class="scene hook">
         <div class="scene-head"><span class="scene-num">ฉาก 01 · 0-5 วิ</span></div>
         <p class="scene-title">Hook — เปิดฉากดึงความสนใจ</p>
-        <p class="scene-note">ใช้จุดขายหลักของสินค้าเป็นแรงจูงใจฉาก (ไม่ใช่ข้อความในภาพ) เพื่อดึงความสนใจใน 3 วินาทีแรก</p>
+        <p class="scene-note" id="hook-note">ใช้จุดขายหลักของสินค้าเป็นแรงจูงใจฉาก (ไม่ใช่ข้อความในภาพ) เพื่อดึงความสนใจใน 3 วินาทีแรก</p>
         <textarea class="prompt-box" id="out-hook" readonly></textarea>
         <div class="scene-foot"><button class="copy-btn" onclick="copyBox('out-hook', this)">คัดลอก</button></div>
       </div>
@@ -298,7 +311,7 @@
       <div class="scene reveal">
         <div class="scene-head"><span class="scene-num">ฉาก 02 · 5-11 วิ</span></div>
         <p class="scene-title">Reveal — โชว์สินค้าใกล้ ๆ</p>
-        <p class="scene-note">หมุนช้า ๆ โชว์พื้นผิวและรายละเอียด ไม่มี action ซับซ้อนให้ AI ทำพลาดง่าย</p>
+        <p class="scene-note" id="reveal-note">หมุนช้า ๆ โชว์พื้นผิวและรายละเอียด ไม่มี action ซับซ้อนให้ AI ทำพลาดง่าย</p>
         <textarea class="prompt-box" id="out-reveal" readonly></textarea>
         <div class="scene-foot"><button class="copy-btn" onclick="copyBox('out-reveal', this)">คัดลอก</button></div>
       </div>
@@ -320,6 +333,7 @@
 
   <footer>
     ก่อนวางลง Google Flow — เช็ค aspect ratio เป็น 9:16 ทุกครั้งก่อนกด generate (ค่ามักรีเซ็ตเป็น 16:9) และเลือกโหมดวิดีโอ/Veo ไม่ใช่ Imagen เพราะสองโหมดนี้แยกกัน ทุกฉาก (Hook/Reveal/Demo) ต้องแนบรูปสินค้าจริงเป็น reference image ก่อน generate เสมอ เพื่อให้สินค้าที่ออกมาตรงกับของจริงที่ขาย ส่วนหมวดสัตว์เลี้ยง/ผู้สูงอายุ ต้องแนบรูปสัตว์เลี้ยง/คนจริงเพิ่มอีกใบสำหรับฉาก Demo — ไม่ใช่แค่ copy prompt ไปวางเฉย ๆ<br><br>
+    <strong style="color:var(--teal);">โหมด ASMR:</strong> เหมาะกับสินค้าที่มีพื้นผิวให้ "สัมผัส" ทางสายตาชัดเจน (ผ้า ขนสัตว์ ยาง ซิลิโคน โฟม) ถ้าสินค้าผิวเรียบมันวาว (เช่น พลาสติก/โลหะแข็ง) โทนนี้อาจดูไม่เข้ากับสินค้าเท่าไร ลองสลับดูทั้งสองโหมดแล้วเทียบผลลัพธ์<br><br>
     ทุก prompt ในหน้านี้ปิดท้ายด้วยคำสั่งห้ามมีตัวอักษร/ซับไตเติล/โลโก้ในวิดีโอแล้ว (no on-screen text, no captions, no subtitles, no watermark, no logos) แต่โมเดลวิดีโอบางตัวยังหลุดใส่ตัวอักษรเบลอ ๆ มาได้เอง ให้เช็คคลิปที่ได้ทุกครั้งก่อนตัดต่อ ถ้ายังมีตัวอักษรติดมา ให้ generate ใหม่หรือครอปฉากนั้นออก<br><br>
     <strong style="color:var(--gold);">ก่อนโพสต์ทุกคลิป:</strong> เปิดตัวเลือก "AI-generated content" ในหน้าอัปโหลดเสมอ — ตั้งแต่ 21 ก.ค. 2026 TikTok บังคับติด label เปิดเผยเนื้อหาที่สร้าง/แก้ด้วย AI จนดูสมจริง (ไม่ใช่แค่ในหมวด Shop แต่ครอบคลุมทุกคลิป/โฆษณาที่มีภาพ เสียง หรือวิดีโอสังเคราะห์ที่สมจริง เช่น ฉาก Demo ที่ animate จากรูปสัตว์เลี้ยง/คนจริงในหน้านี้) ไม่ติดป้ายมีความเสี่ยงถูกลบคลิปหรือแบนบัญชี และเช็คว่าฉากที่ generate ไม่ได้ทำให้สินค้าดูเวอร์เกินจริงเทียบกับของจริง โดยเฉพาะถ้าขายสินค้าหมวดสุขภาพ/ความงาม/ทำความสะอาด ซึ่งมีกฎเข้มกว่าหมวดอื่น
   </footer>
@@ -341,6 +355,9 @@ const products = {
 
 // คำสั่งท้าย prompt กำกับไม่ให้มีตัวอักษร/ซับไตเติล/โลโก้ปรากฏในวิดีโอ
 const NO_TEXT = 'no on-screen text, no captions, no subtitles, no watermark, no logos, no letters or numbers visible anywhere in frame';
+
+// คำอธิบายโทน ASMR — macro, สัมผัส, จังหวะช้า, แสงนุ่ม
+const ASMR_LOOK = 'extreme macro close-up lens, hyper-detailed surface texture, soft diffused lighting, shallow depth of field, slow deliberate hand movements, fingertips gently tapping and gliding across the surface, calm satisfying unhurried pacing, quiet ambient room tone, no music';
 
 function refreshProductSelect(selected){
   const sel = document.getElementById('product-select');
@@ -402,6 +419,7 @@ function generate(){
   const benefit = val('benefit');
   const benefitEn = val('benefit-en');
   const category = document.getElementById('category-select').value;
+  const asmr = document.getElementById('asmr-mode').checked;
 
   if(!productName || !descEn || !benefitEn){
     showWarning('กรุณากรอกให้ครบ: ชื่อสินค้า, คำอธิบายสินค้า (อังกฤษ), และจุดขายหลัก (อังกฤษ) — ช่องเหล่านี้คือสิ่งที่ถูกส่งเข้า prompt จริง');
@@ -412,27 +430,57 @@ function generate(){
   // ทุกฉากต้องอ้างอิงรูปสินค้าจริงที่แนบไว้ ไม่ระบุสี/วัสดุเป็นข้อความเอง ให้ AI อ่านจากรูปแทน
   const productRefNote = 'using the attached product reference image to match its exact color, shape, proportions, texture, and design';
 
-  // หมายเหตุ: benefitEn/descEn เป็น "แรงจูงใจของฉาก" ที่ถูกส่งให้ AI จริง ไม่ใช่ข้อความ/คำพูดอ้างอิงในภาพ
-  const hook = `Close-up shot of the ${descEn}, ${productRefNote}, being set down firmly on a wooden table, camera push-in, framing emphasizes the product's key feature: ${benefitEn}, dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format, ${NO_TEXT}`;
+  let hook, reveal;
 
-  const reveal = `Extreme close-up product shot of the ${descEn}, ${productRefNote}, textured surface${surfaceNote}, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
+  if(asmr){
+    hook = `Strictly match the product in the attached reference image — same color, shape, proportions, and surface texture. Extreme macro close-up of the ${descEn}, ${ASMR_LOOK}, camera slowly pushing in as a fingertip lightly touches the edge of the product, subtle catchlight on the surface, framing emphasizes the product's key feature: ${benefitEn}, vertical 9:16 format, ${NO_TEXT}`;
+
+    reveal = `Strictly match the product in the attached reference image — same color, shape, proportions, and surface texture. Macro product shot of the ${descEn}${surfaceNote}, ${ASMR_LOOK}, slow 180-degree rotation on a soft matte surface, fingertips gently gliding along its contours and pressing into softer parts if any, studio softbox lighting, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
+  } else {
+    hook = `Close-up shot of the ${descEn}, ${productRefNote}, being set down firmly on a wooden table, camera push-in, framing emphasizes the product's key feature: ${benefitEn}, dust or light particles in the air, slow motion, handheld camera shake, moody indoor lighting, realistic physics, vertical 9:16 format, ${NO_TEXT}`;
+
+    reveal = `Extreme close-up product shot of the ${descEn}, ${productRefNote}, textured surface${surfaceNote}, rotating slowly on a wooden table, studio lighting, shallow depth of field, clean minimal background, vertical 9:16 format, ${NO_TEXT}`;
+  }
 
   let demo, demoNote;
   if(category === 'pet'){
-    demo = `Using the attached reference photo of the pet and the attached product reference image, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at the ${descEn} placed nearby (${productRefNote}), subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format, ${NO_TEXT}`;
-    demoNote = 'แนบรูปสัตว์เลี้ยงจริง + รูปสินค้าจริงเป็น reference image ก่อน generate เพื่อให้หน้าตา/ลายขนและตัวสินค้าตรงกับของจริง และจำกัด motion ให้สั้น (หันหัว/กระดิกหาง) หลีกเลี่ยง action เต็มตัวอย่างการวิ่งที่ AI ยังทำไม่สมจริง';
+    if(asmr){
+      demo = `Strictly match the pet and the product in the two attached reference images. Extreme macro close-up: fingertips slowly and gently stroking through the pet's fur while using the ${descEn} nearby, ${ASMR_LOOK}, keep the pet's fur pattern, color, and face identical to the reference photo, minimal head/ear motion only, vertical 9:16 format, ${NO_TEXT}`;
+      demoNote = 'โหมด ASMR: แนบรูปสัตว์เลี้ยงจริง + รูปสินค้าจริงเป็น reference image เน้นระยะ macro ที่ขน/มือสัมผัส หลีกเลี่ยง action เต็มตัว เพราะยิ่งเคลื่อนไหวเยอะ ยิ่งหลุดจากรูปอ้างอิงง่าย';
+    } else {
+      demo = `Using the attached reference photo of the pet and the attached product reference image, animate a short close-up clip: the pet's head turning gently toward camera and sniffing at the ${descEn} placed nearby (${productRefNote}), subtle tail wag, natural indoor lighting, shallow depth of field, keep the pet's fur pattern, color, and face identical to the reference photo, vertical 9:16 format, ${NO_TEXT}`;
+      demoNote = 'แนบรูปสัตว์เลี้ยงจริง + รูปสินค้าจริงเป็น reference image ก่อน generate เพื่อให้หน้าตา/ลายขนและตัวสินค้าตรงกับของจริง และจำกัด motion ให้สั้น (หันหัว/กระดิกหาง) หลีกเลี่ยง action เต็มตัวอย่างการวิ่งที่ AI ยังทำไม่สมจริง';
+    }
   } else if(category === 'elderly'){
-    demo = `Using the attached reference photo of the person and the attached product reference image, animate a short close-up clip: hands gripping and adjusting the ${descEn} (${productRefNote}), slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format, ${NO_TEXT}`;
-    demoNote = 'แนบรูปคนจริง + รูปสินค้าจริงเป็น reference image ก่อน generate แล้วโฟกัสระยะใกล้ที่มือ/สีหน้าแทนท่าเดินเต็มตัว เพราะ AI ยังทำท่าเดิน/น้ำหนักตัวคนสูงอายุแบบเต็มตัวไม่สมจริงพอ';
+    if(asmr){
+      demo = `Strictly match the person and the product in the two attached reference images. Extreme macro close-up of hands slowly and deliberately adjusting the ${descEn}, ${ASMR_LOOK}, keep skin texture and hand identity identical to the reference photo, avoid full-body motion, vertical 9:16 format, ${NO_TEXT}`;
+      demoNote = 'โหมด ASMR: แนบรูปคนจริง + รูปสินค้าจริง เน้นระยะ macro ที่มือ/นิ้วสัมผัสสินค้าช้า ๆ แทนการเดิน/ขยับตัวเต็มตัว';
+    } else {
+      demo = `Using the attached reference photo of the person and the attached product reference image, animate a short close-up clip: hands gripping and adjusting the ${descEn} (${productRefNote}), slight natural forward lean, soft indoor lighting, keep facial identity and skin texture identical to the reference photo, avoid full-body walking motion, vertical 9:16 format, ${NO_TEXT}`;
+      demoNote = 'แนบรูปคนจริง + รูปสินค้าจริงเป็น reference image ก่อน generate แล้วโฟกัสระยะใกล้ที่มือ/สีหน้าแทนท่าเดินเต็มตัว เพราะ AI ยังทำท่าเดิน/น้ำหนักตัวคนสูงอายุแบบเต็มตัวไม่สมจริงพอ';
+    }
   } else {
-    demo = `A ${presenter} demonstrating the ${descEn} in everyday use, ${productRefNote}, natural hand movements, motion clearly conveys the product benefit: ${benefitEn}, bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format, ${NO_TEXT}`;
-    demoNote = 'แนบรูปสินค้าจริงเป็น reference image ก่อน generate เพื่อให้สินค้าที่คนพรีเซนต์ถือในคลิปตรงกับของจริง';
+    if(asmr){
+      demo = `Strictly match the product in the attached reference image — same color, shape, proportions, and surface texture. Extreme macro close-up of hands slowly using the ${descEn}, ${ASMR_LOOK}, motion clearly conveys the product benefit: ${benefitEn}, soft window daylight, vertical 9:16 format, ${NO_TEXT}`;
+      demoNote = 'โหมด ASMR: แนบรูปสินค้าจริงเป็น reference image เน้นระยะ macro ที่มือสัมผัส/ใช้งานสินค้าช้า ๆ แทนช็อตเต็มตัวคนพรีเซนต์';
+    } else {
+      demo = `A ${presenter} demonstrating the ${descEn} in everyday use, ${productRefNote}, natural hand movements, motion clearly conveys the product benefit: ${benefitEn}, bright indoor setting, smooth handheld tracking shot, natural daylight, vertical 9:16 format, ${NO_TEXT}`;
+      demoNote = 'แนบรูปสินค้าจริงเป็น reference image ก่อน generate เพื่อให้สินค้าที่คนพรีเซนต์ถือในคลิปตรงกับของจริง';
+    }
   }
 
   setVal('out-hook', hook);
   setVal('out-reveal', reveal);
   setVal('out-demo', demo);
+
+  document.getElementById('hook-note').textContent = asmr
+    ? 'โทน ASMR: macro close-up + สัมผัสสินค้าช้า ๆ เพื่อดึงความสนใจด้วยความรู้สึก "อยากดูต่อ" แทนแรงกระแทกแบบ hook ทั่วไป'
+    : 'ใช้จุดขายหลักของสินค้าเป็นแรงจูงใจฉาก (ไม่ใช่ข้อความในภาพ) เพื่อดึงความสนใจใน 3 วินาทีแรก';
+  document.getElementById('reveal-note').textContent = asmr
+    ? 'โทน ASMR: หมุนช้า + นิ้วสัมผัสพื้นผิว เหมาะกับสินค้าที่มีพื้นผิวให้ "รู้สึก" ได้ทางสายตา (ผ้า/ขน/ยาง/ซิลิโคน)'
+    : 'หมุนช้า ๆ โชว์พื้นผิวและรายละเอียด ไม่มี action ซับซ้อนให้ AI ทำพลาดง่าย';
   document.getElementById('demo-note').textContent = demoNote;
+
   // ซับไตเติลแสดงเป็นภาษาไทยตามที่กรอก — ใช้สำหรับใส่เองใน CapCut เท่านั้น ไม่ถูกส่งเข้า prompt
   document.getElementById('out-caption').textContent = benefit || '—';
 }
